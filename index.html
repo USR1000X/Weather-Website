@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Atmosphere</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #2A0944;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(67, 40, 89, 0.9);
+            border-radius: 15px;
+        }
+
+        /* Sun Animation */
+        .sun {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(#FFD700, #FFA500);
+            border-radius: 50%;
+            box-shadow: 0 0 50px #FF4500;
+            animation: sunGlow 4s infinite alternate;
+        }
+
+        @keyframes sunGlow {
+            0% { box-shadow: 0 0 50px #FF4500; }
+            100% { box-shadow: 0 0 100px #FFD700; }
+        }
+
+        /* Rain Animation */
+        .rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .rain::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent, #3B185F);
+            animation: rainFall 0.5s linear infinite;
+        }
+
+        @keyframes rainFall {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 20% 100%; }
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: #3B185F;
+            color: white;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #A12568;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #FEC260;
+        }
+
+        .options {
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #3B185F;
+            border-radius: 10px;
+        }
+
+        .weather-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #3B185F;
+            border-radius: 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .weather-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #2A0944;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="sun"></div>
+    <div class="rain"></div>
+
+    <div class="container">
+        <h1>Weather Atmosphere</h1>
+        <div>
+            <input type="text" id="location" placeholder="Enter city name">
+            <button onclick="getWeather()">Get Weather</button>
+        </div>
+
+        <div class="options">
+            <label class="option-item">
+                <input type="checkbox" name="option" value="temp" checked>
+                🌡 Temperature
+            </label>
+            <label class="option-item">
+                <input type="checkbox" name="option" value="humidity">
+                💧 Humidity
+            </label>
+            <label class="option-item">
+                <input type="checkbox" name="option" value="pressure">
+                📊 Pressure
+            </label>
+            <label class="option-item">
+                <input type="checkbox" name="option" value="feels_like">
+                🤒 Feels Like
+            </label>
+            <label class="option-item">
+                <input type="checkbox" name="option" value="wind">
+                🌬 Wind Speed
+            </label>
+            <label class="option-item">
+                <input type="checkbox" name="option" value="description">
+                ☁ Description
+            </label>
+        </div>
+
+        <div class="weather-info" id="weather-info">
+            <div class="weather-item" id="temp">Temperature: <span></span></div>
+            <div class="weather-item" id="humidity">Humidity: <span></span></div>
+            <div class="weather-item" id="pressure">Pressure: <span></span></div>
+            <div class="weather-item" id="feels_like">Feels Like: <span></span></div>
+            <div class="weather-item" id="wind">Wind Speed: <span></span></div>
+            <div class="weather-item" id="description">Description: <span></span></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'b65b0d0d97682a5d10115a2d76766096';
+
+        function getWeather() {
+            const location = document.getElementById('location').value.trim();
+            const checkboxes = document.querySelectorAll('input[name="option"]:checked');
+
+            if (!location) {
+                alert('Please enter a location');
+                return;
+            }
+
+            if (checkboxes.length === 0) {
+                alert('Please select at least one option');
+                return;
+            }
+
+            fetch(`https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${API_KEY}&units=metric`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.cod !== 200) {
+                        alert(data.message || 'City not found');
+                        return;
+                    }
+
+                    // Hide all weather items first
+                    document.querySelectorAll('.weather-item').forEach(item => {
+                        item.style.display = 'none';
+                    });
+
+                    // Show selected weather items
+                    checkboxes.forEach(checkbox => {
+                        const element = document.getElementById(checkbox.value);
+                        if (element) {
+                            element.style.display = 'block';
+                            element.querySelector('span').textContent = getValue(data, checkbox.value);
+                        }
+                    });
+
+                    // Update background
+                    updateBackground(data.weather[0].main);
+                })
+                .catch(error => {
+                    alert('Error fetching weather data');
+                    console.error(error);
+                });
+        }
+
+        function getValue(data, type) {
+            switch(type) {
+                case 'temp': return `${data.main.temp}°C`;
+                case 'humidity': return `${data.main.humidity}%`;
+                case 'pressure': return `${data.main.pressure} hPa`;
+                case 'feels_like': return `${data.main.feels_like}°C`;
+                case 'wind': return `${data.wind.speed} m/s`;
+                case 'description': return data.weather[0].description;
+                default: return 'N/A';
+            }
+        }
+
+        function updateBackground(weatherCondition) {
+            const rain = document.querySelector('.rain');
+            const sun = document.querySelector('.sun');
+
+            if (weatherCondition.toLowerCase().includes('rain')) {
+                rain.style.display = 'block';
+                sun.style.display = 'none';
+            } else {
+                rain.style.display = 'none';
+                sun.style.display = 'block';
+            }
+        }
+
+        // Allow pressing Enter key
+        document.getElementById("location").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                getWeather();
+            }
+        });
+    </script>
+</body>
+</html>
